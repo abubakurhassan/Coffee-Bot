@@ -16,9 +16,9 @@ class CoffeeInviteView(discord.ui.View):
     ):
         
         # --- Only the invited person can click --- #
-        if interaction.user.id == self.invitee.id:
+        if interaction.user.id != self.invitee.id:
             await interaction.response.send_message(
-                f"{self.invitee.mention} What are you stupid? Trying to accept your own invite...go touch some grass!",
+                f"{self.inviter.mention} What are you stupid? Trying to accept your own invite...go touch some grass!",
                 ephemeral=True
             )
             return
