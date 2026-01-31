@@ -1,9 +1,8 @@
 active_invites = {}
 
-def set_waiting(channel_id: int, invitee_id: int, wait_type: str):
+def set_waiting(channel_id: int, invitee_id: int):
     active_invites[channel_id] = {
         "invitee_id": invitee_id,
-        "type": wait_type
     }
 
 def clear_waiting(channel_id: int):
