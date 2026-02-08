@@ -4,6 +4,9 @@ from discord import app_commands
 from config.settings import ALLOWED_CHANNEL_ID
 from views.invite_view import CoffeeInviteView
 from services.invites import get_waiting, clear_waiting, set_waiting
+from database.db import get_user_stats, get_all_interactions, get_leaderboard
+from typing import Optional
+
 
 class Coffee(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -27,6 +30,7 @@ class Coffee(commands.Cog):
                 f"There's already an active coffee invite! Wait for it to finish first.",
                 ephemeral=True
             )
+            return
         
         inviter = interaction.user
 
@@ -42,5 +46,74 @@ class Coffee(commands.Cog):
             view=view
         )
 
-async def setup(bot):
+    # --- Adds these commands to your Coffee cog --- #
+
+    @app_commands.command(name="coffee-stats", description="View your coffee statistics")
+    async def coffee_stats(self, interaction: discord.Interaction, member: Optional[discord.Member] = None):
+        member = member or interaction.user
+        
+        stats = get_user_stats(member.id)
+        
+        embed = discord.Embed(
+            title=f"☕ Coffee Stats for {member.display_name}",
+            color=discord.Color.orange()
+        )
+        
+        embed.add_field(name="Invites Sent", value=stats['invites_sent'], inline=True)
+        embed.add_field(name="Invites Accepted", value=stats['invites_accepted'], inline=True)
+        embed.add_field(name="Invites Declined", value=stats['invites_declined'], inline=True)
+        
+        embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
+        
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="coffee-history", description="View recent coffee interactions")
+    async def coffee_history(self, interaction: discord.Interaction):
+        interactions = get_all_interactions(limit=10)
+        
+        if not interactions:
+            await interaction.response.send_message("No coffee interactions yet!")
+            return
+        
+        embed = discord.Embed(
+            title="☕ Recent Coffee Interactions",
+            color=discord.Color.orange()
+        )
+        
+        for inviter, invitee, response, timestamp in interactions:
+            status = "✅ Accepted" if response == "accepted" else "❌ Declined"
+            embed.add_field(
+                name=f"{inviter} → {invitee}",
+                value=f"{status} • {timestamp}",
+                inline=False
+            )
+        
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="coffee-leaderboard", description="View coffee invite leaderboard")
+    async def coffee_leaderboard(self, interaction: discord.Interaction):
+        leaderboard = get_leaderboard()
+        
+        if not leaderboard:
+            await interaction.response.send_message("No data yet!")
+            return
+        
+        embed = discord.Embed(
+            title="☕ Coffee Invite Leaderboard",
+            description="Most active coffee inviters",
+            color=discord.Color.gold()
+        )
+        
+        medals = ["🥇", "🥈", "🥉"]
+        for i, (name, count) in enumerate(leaderboard):
+            medal = medals[i] if i < 3 else f"{i+1}."
+            embed.add_field(
+                name=f"{medal} {name}",
+                value=f"{count} invites",
+                inline=False
+            )
+        
+        await interaction.response.send_message(embed=embed)
+
+async def setup(bot: commands.Bot):
     await bot.add_cog(Coffee(bot))

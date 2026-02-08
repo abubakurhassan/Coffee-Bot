@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from database.db import init_db
 
 load_dotenv()
 
@@ -29,4 +30,5 @@ bot = CoffeeBot()
 async def on_ready():
     print(f"☕ Logged in as {bot.user}")
 
+init_db()
 bot.run(TOKEN)
